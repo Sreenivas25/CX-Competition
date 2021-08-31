@@ -8,9 +8,23 @@ import os
 import datetime
 import time
 
+#Libraries for Calender API
+import pickle
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+#from datetime import datetime, timedelta
+
 ts = time.time()
+#os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="C:/Users/SreenivasGorantla/Downloads/Dialogflow CX/sreenivas-bot-b858df354d42.json"
+#SCOPES = ['https://www.googleapis.com/auth/calendar']
+#CREDENTIALS_FILE = 'C:/Users/SreenivasGorantla/Downloads/Dialogflow CX/client_secret_20925083630-as6g5mobqnrn019l52bha41vln62uv1l.apps.googleusercontent.com.json'
+
 client = bigquery.Client()
+
 app = Flask(__name__)
+
 def results():
     req = request.get_json(force=True)
     print(req)
@@ -93,7 +107,8 @@ def results():
             New_Deaths = '0'
         if Total_Tests == '':
             Total_Tests = '0'
-                           
+                   
+        
         return {
             "fulfillment_response": {
                 "messages": [{
@@ -202,7 +217,44 @@ def results():
         m = str(minutes)
         if len(m) == 1:
             m = '0'+m
-            
+        
+        def get_calendar_service():
+            creds = None
+            # The file token.pickle stores the user's access and refresh tokens, and is
+            # created automatically when the authorization flow completes for the first
+            # time.
+            if os.path.exists('token.pickle'):
+               with open('token.pickle', 'rb') as token:
+                   creds = pickle.load(token)
+            # If there are no (valid) credentials available, let the user log in.
+            if not creds or not creds.valid:
+               if creds and creds.expired and creds.refresh_token:
+                   creds.refresh(Request())
+               else:
+                   flow = InstalledAppFlow.from_client_secrets_file(
+                       CREDENTIALS_FILE, SCOPES)
+                   creds = flow.run_local_server(port=0)
+
+               # Save the credentials for the next run
+               with open('token.pickle', 'wb') as token:
+                   pickle.dump(creds, token)
+
+            service = build('calendar', 'v3', credentials=creds)
+            return service
+        
+        def create_event():
+            print('event booking initiated')
+            # creates one hour event tomorrow 10 AM IST
+            service = get_calendar_service()
+            event_result = service.events().insert(calendarId='c_8nk2et9htcie3gnktfvfltj6ck@group.calendar.google.com',
+            body={
+               "summary": 'Vaccination-slot-'+name,
+               "description": 'Vaccination slot booked via chat app',
+               "start": {"dateTime": slot_start, "timeZone": 'Asia/Kolkata'},
+               "end": {"dateTime": slot_end, "timeZone": 'Asia/Kolkata'},
+               }
+            ).execute()
+            print(event_result)
         query = """SELECT * FROM `sreenivas-bot.Nancy.User_Slot_Info` where Mobile = {} and Email = '{}'""" .format(mobile, email)
         resp = client.query(query,project="sreenivas-bot").to_dataframe()
         if resp.Dose_1_Slot [0] == None:        
