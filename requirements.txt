@@ -4,4 +4,7 @@ Flask==1.1.2
 python-dateutil >= 2.8.0
 pandas >= 1.1.0
 pyarrow >= 2.0.0
-
+pickles >= 0.1.1
+google-api-python-client >= 2.18.0
+google-auth-oauthlib >= 0.4.5
+google-auth >= 2.0.1
